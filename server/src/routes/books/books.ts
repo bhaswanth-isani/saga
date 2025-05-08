@@ -138,6 +138,7 @@ const booksRoute = new Hono({ strict: false })
 				details: await bookFromISBN13(book.isbn13),
 			})),
 		)
+
 		return c.json(books)
 	})
 	.get('/stats', AuthMiddleware.userMiddleware(), async (c) => {
@@ -164,6 +165,11 @@ const booksRoute = new Hono({ strict: false })
 			if (!book) {
 				throw new HTTPException(Status.notFound, { message: BOOK_ERROR_CODES.NOT_FOUND })
 			}
+
+			const uBook = await db
+				.update(books)
+				.set({ progress: book.progress + progress })
+				.where(eq(books.id, book.id))
 			let todayStat = await db.query.stats.findFirst({
 				where: (stats, { and, eq }) =>
 					and(
@@ -192,7 +198,7 @@ const booksRoute = new Hono({ strict: false })
 					.then((v) => v[0]!)
 			}
 
-			return c.json(todayStat)
+			return c.json({ book: uBook, stat: todayStat })
 		},
 	)
 	.get(
@@ -525,6 +531,7 @@ const booksRoute = new Hono({ strict: false })
 		webhookMiddleware,
 		async (c) => {
 			const { objectKey } = c.req.valid('json')
+			console.log(objectKey)
 			const userID = objectKey.split('/').shift()
 			const isbn13 = objectKey.split('/').pop()?.split('.').shift()
 			console.log(objectKey, userID, isbn13)
