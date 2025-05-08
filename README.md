@@ -16,8 +16,10 @@ For Books - It uses Hardcover API for get books and their details
 - Server: AWS EC2
 
 ### Application UI
-<img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/home.PNG?raw=true" width="200px">
-<img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/library.PNG?raw=true" width="200px">
-<img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/explore.PNG?raw=true" width="200px">
-<img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/book.PNG?raw=true" width="200px">
-<img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/render.PNG?raw=true" width="200px">
+<div style="display: inline;">
+  <img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/home.PNG?raw=true" width="200px">
+  <img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/library.PNG?raw=true" width="200px">
+  <img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/explore.PNG?raw=true" width="200px">
+  <img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/book.PNG?raw=true" width="200px">
+  <img src="https://github.com/bhaswanth-isani/saga/blob/main/assets/reader.PNG?raw=true" width="200px">
+</div>
