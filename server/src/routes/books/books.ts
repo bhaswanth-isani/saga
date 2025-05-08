@@ -12,6 +12,7 @@ import { and, between, eq } from 'drizzle-orm'
 import { webhookMiddleware } from '../../core/webhooks'
 import { ENV } from '../../core/env'
 import { stats } from '../../database/models/books/stats'
+import cache from '../../database/cache'
 
 type LibraryBook = {
 	id: number
@@ -297,131 +298,45 @@ const booksRoute = new Hono({ strict: false })
 		const today = formatDate(new Date())
 		const sixMonthsAgo = formatDate(new Date(new Date().setMonth(new Date().getMonth() - 6)))
 
-		const { data } = (await graphql.query({
-			query: gql`
-        query {
-            books_trending(from: "${sixMonthsAgo}", limit: 10, offset: 0, to: "${today}") {
-                ids
-            }
-        }`,
-		})) as { data: { books_trending: { ids: number[] } } }
+		const trendingOrder = await cache.get('trending', async () => {
+			const { data } = (await graphql.query({
+				query: gql`
+			query {
+				books_trending(from: "${sixMonthsAgo}", limit: 10, offset: 0, to: "${today}") {
+					ids
+				}
+			}`,
+			})) as { data: { books_trending: { ids: number[] } } }
 
-		const trendingBookIds = data.books_trending.ids.join(', ')
-
-		const { data: trendingBooksData } = (await graphql.query({
-			query: gql`
-            query {
-                list_books(
-                    where: {book: {id: {_in: [${trendingBookIds}]}}}
-                    distinct_on: book_id
-                ) {
-                    book {
-                        id
-                        dto_combined
-                        image {
-                            url
-                        }
-                        pages
-                        contributions {
-                            author {
-                                image {
-                                    url
-                                }
-                                name
-                            }
-                        }
-                        users_count
-                    }
-                }
-            }        
-        `,
-		})) as {
-			data: {
-				list_books: {
-					book: {
-						id: number
-						dto_combined: {
-							title: string
-							description: string
-							isbn_10: string
-							isbn_13: string
-							release_date: string
-							genres: string[]
-						}
-						image?: { url: string }
-						pages: number
-						contributions: {
-							author: {
-								image?: { url: string }
-								name: string
-							}
-						}[]
-						users_count: number
-					}
-				}[]
-			}
-		}
-
-		const books = trendingBooksData.list_books
-			.filter((book) => book.book.image && book.book.pages)
-			.map((book) => ({
-				id: book.book.id,
-				title: book.book.dto_combined.title,
-				description: book.book.dto_combined.description,
-				image: book.book.image!.url,
-				isbn10: book.book.dto_combined.isbn_10,
-				isbn13: book.book.dto_combined.isbn_13,
-				genres: book.book.dto_combined.genres,
-				pages: book.book.pages,
-				readers: book.book.users_count,
-				releaseDate: book.book.dto_combined.release_date,
-				authors: book.book.contributions.map((contribution) => ({
-					name: contribution.author.name,
-					image: contribution.author.image?.url,
-				})),
-			}))
-
-		const trendingOrder = data.books_trending.ids.map((id) => books.find((book) => book.id === id)!)
-
-		return c.json(trendingOrder)
-	})
-	.get(
-		'/new',
-		zValidator('query', z.object({ cycle: z.enum(['month', 'year']) }), errorHandler),
-		async (c) => {
-			const { cycle } = c.req.valid('query')
-
-			const today = formatDate(new Date())
-			const monthAgo = formatDate(new Date(new Date().setMonth(new Date().getMonth() - 1)))
-			const yearAgo = formatDate(new Date(new Date().setFullYear(new Date().getFullYear() - 1)))
+			const trendingBookIds = data.books_trending.ids.join(', ')
 
 			const { data: trendingBooksData } = (await graphql.query({
 				query: gql`
-            query {
-                list_books(
-                    where: { book: { release_date: { _gt: "${cycle === 'month' ? monthAgo : yearAgo}", _lt: "${today}" } } }
-                    distinct_on: book_id
-                ) {
-                    book {
-                        id
-                        dto_combined
-                        image {
-                            url
-                        }
-                        pages
-                        contributions {
-                            author {
-                                image {
-                                    url
-                                }
-                                name
-                            }
-                        }
-                        users_count
-                    }
-                }
-            }        
-        `,
+				query {
+					list_books(
+						where: {book: {id: {_in: [${trendingBookIds}]}}}
+						distinct_on: book_id
+					) {
+						book {
+							id
+							dto_combined
+							image {
+								url
+							}
+							pages
+							contributions {
+								author {
+									image {
+										url
+									}
+									name
+								}
+							}
+							users_count
+						}
+					}
+				}        
+			`,
 			})) as {
 				data: {
 					list_books: {
@@ -462,15 +377,105 @@ const booksRoute = new Hono({ strict: false })
 					pages: book.book.pages,
 					readers: book.book.users_count,
 					releaseDate: book.book.dto_combined.release_date,
-					authors: book.book.contributions.map((contribution) => {
-						return {
-							name: contribution.author.name,
-							image: contribution.author.image?.url,
-						}
-					}),
+					authors: book.book.contributions.map((contribution) => ({
+						name: contribution.author.name,
+						image: contribution.author.image?.url,
+					})),
 				}))
-				.toSorted((a, b) => b.readers - a.readers)
-				.slice(0, 10)
+
+			return data.books_trending.ids.map((id) => books.find((book) => book.id === id)!)
+		})
+
+		return c.json(trendingOrder)
+	})
+	.get(
+		'/new',
+		zValidator('query', z.object({ cycle: z.enum(['month', 'year']) }), errorHandler),
+		async (c) => {
+			const { cycle } = c.req.valid('query')
+
+			const today = formatDate(new Date())
+			const monthAgo = formatDate(new Date(new Date().setMonth(new Date().getMonth() - 1)))
+			const yearAgo = formatDate(new Date(new Date().setFullYear(new Date().getFullYear() - 1)))
+
+			const books = await cache.get(`new-${cycle}`, async () => {
+				const { data: trendingBooksData } = (await graphql.query({
+					query: gql`
+				query {
+					list_books(
+						where: { book: { release_date: { _gt: "${cycle === 'month' ? monthAgo : yearAgo}", _lt: "${today}" } } }
+						distinct_on: book_id
+					) {
+						book {
+							id
+							dto_combined
+							image {
+								url
+							}
+							pages
+							contributions {
+								author {
+									image {
+										url
+									}
+									name
+								}
+							}
+							users_count
+						}
+					}
+				}        
+			`,
+				})) as {
+					data: {
+						list_books: {
+							book: {
+								id: number
+								dto_combined: {
+									title: string
+									description: string
+									isbn_10: string
+									isbn_13: string
+									release_date: string
+									genres: string[]
+								}
+								image?: { url: string }
+								pages: number
+								contributions: {
+									author: {
+										image?: { url: string }
+										name: string
+									}
+								}[]
+								users_count: number
+							}
+						}[]
+					}
+				}
+
+				return trendingBooksData.list_books
+					.filter((book) => book.book.image && book.book.pages)
+					.map((book) => ({
+						id: book.book.id,
+						title: book.book.dto_combined.title,
+						description: book.book.dto_combined.description,
+						image: book.book.image!.url,
+						isbn10: book.book.dto_combined.isbn_10,
+						isbn13: book.book.dto_combined.isbn_13,
+						genres: book.book.dto_combined.genres,
+						pages: book.book.pages,
+						readers: book.book.users_count,
+						releaseDate: book.book.dto_combined.release_date,
+						authors: book.book.contributions.map((contribution) => {
+							return {
+								name: contribution.author.name,
+								image: contribution.author.image?.url,
+							}
+						}),
+					}))
+					.toSorted((a, b) => b.readers - a.readers)
+					.slice(0, 10)
+			})
 
 			return c.json(books)
 		},
