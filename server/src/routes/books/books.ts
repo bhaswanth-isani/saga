@@ -8,9 +8,10 @@ import { HTTPException } from 'hono/http-exception'
 import db from '../../database/database'
 import { books } from '../../database/models/books/books'
 import { AuthMiddleware } from '../auth/helpers/middleware'
-import { and, eq } from 'drizzle-orm'
+import { and, between, eq } from 'drizzle-orm'
 import { webhookMiddleware } from '../../core/webhooks'
 import { ENV } from '../../core/env'
+import { stats } from '../../database/models/books/stats'
 
 type LibraryBook = {
 	id: number
@@ -131,10 +132,68 @@ const booksRoute = new Hono({ strict: false })
 		})
 
 		const books = await Promise.all(
-			libraryBooks.map(async (book) => ({ book, details: await bookFromISBN13(book.isbn13) })),
+			libraryBooks.map(async (book) => ({
+				book: { ...book, path: book.path ? s3.presign(book.path) : null },
+				details: await bookFromISBN13(book.isbn13),
+			})),
 		)
 		return c.json(books)
 	})
+	.get('/stats', AuthMiddleware.userMiddleware(), async (c) => {
+		const { user } = c.var.userInfo
+		const stats = await db.query.stats.findMany({
+			where: (stats, { eq }) => eq(stats.userId, user.id),
+		})
+		return c.json(stats)
+	})
+	.post(
+		'/stats',
+		zValidator('json', z.object({ isbn13: z.string(), progress: z.number() })),
+		AuthMiddleware.userMiddleware(),
+		async (c) => {
+			const { user } = c.var.userInfo
+			const { isbn13, progress } = c.req.valid('json')
+
+			const today = new Date()
+			const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+
+			const book = await db.query.books.findFirst({
+				where: (books, { and, eq }) => and(eq(books.userId, user.id), eq(books.isbn13, isbn13)),
+			})
+			if (!book) {
+				throw new HTTPException(Status.notFound, { message: BOOK_ERROR_CODES.NOT_FOUND })
+			}
+			let todayStat = await db.query.stats.findFirst({
+				where: (stats, { and, eq }) =>
+					and(
+						eq(stats.userId, user.id),
+						eq(stats.bookId, book.id),
+						between(stats.createdAt, today, tomorrow),
+					),
+			})
+
+			if (todayStat) {
+				todayStat = await db
+					.update(stats)
+					.set({ progress: todayStat.progress + progress })
+					.where(eq(stats.id, todayStat.id))
+					.returning()
+					.then((v) => v[0]!)
+			} else {
+				todayStat = await db
+					.insert(stats)
+					.values({
+						userId: user.id,
+						bookId: book.id,
+						progress: progress,
+					})
+					.returning()
+					.then((v) => v[0]!)
+			}
+
+			return c.json(todayStat)
+		},
+	)
 	.get(
 		'/search',
 		zValidator('query', z.object({ search: z.string() }), errorHandler),
@@ -328,16 +387,9 @@ const booksRoute = new Hono({ strict: false })
 	})
 	.get(
 		'/new',
-		zValidator(
-			'query',
-			z.object({
-				cycle: z.enum(['month', 'year']),
-				limit: z.string().transform((v) => Number.parseInt(v)),
-			}),
-			errorHandler,
-		),
+		zValidator('query', z.object({ cycle: z.enum(['month', 'year']) }), errorHandler),
 		async (c) => {
-			const { cycle, limit } = c.req.valid('query')
+			const { cycle } = c.req.valid('query')
 
 			const today = formatDate(new Date())
 			const monthAgo = formatDate(new Date(new Date().setMonth(new Date().getMonth() - 1)))
@@ -418,7 +470,7 @@ const booksRoute = new Hono({ strict: false })
 					}),
 				}))
 				.toSorted((a, b) => b.readers - a.readers)
-				.slice(0, limit)
+				.slice(0, 10)
 
 			return c.json(books)
 		},
