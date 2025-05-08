@@ -538,11 +538,9 @@ const booksRoute = new Hono({ strict: false })
 				throw new HTTPException(Status.unprocessableEntity)
 			}
 
-			const url = `${ENV.S3_ENDPOINT}/${objectKey}`
-
 			await db
 				.update(books)
-				.set({ path: url })
+				.set({ path: objectKey })
 				.where(and(eq(books.isbn13, isbn13), eq(books.userId, userID)))
 
 			return c.json(true)
