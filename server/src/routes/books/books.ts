@@ -22,7 +22,7 @@ type LibraryBook = {
 	genres: string[]
 	pages: number
 	readers: number
-	release_date: string
+	releaseDate: string
 	authors: {
 		name: string
 		image: string | undefined
@@ -112,7 +112,7 @@ async function bookFromISBN13(isbn13: string): Promise<LibraryBook> {
 		genres: book.dto_combined.genres,
 		pages: book.pages,
 		readers: book.users_count,
-		release_date: book.dto_combined.release_date,
+		releaseDate: book.dto_combined.release_date,
 		authors: book.contributions.map((contribution) => {
 			return {
 				name: contribution.author.name,
@@ -220,7 +220,7 @@ const booksRoute = new Hono({ strict: false })
 					genres: book.book.dto_combined.genres,
 					pages: book.book.pages,
 					readers: book.book.users_count,
-					release_date: book.book.dto_combined.release_date,
+					releaseDate: book.book.dto_combined.release_date,
 					authors: book.book.contributions.map((contribution) => ({
 						name: contribution.author.name,
 						image: contribution.author.image?.url,
@@ -304,7 +304,7 @@ const booksRoute = new Hono({ strict: false })
 		}
 
 		const books = trendingBooksData.list_books
-			.filter((book) => book.book.image)
+			.filter((book) => book.book.image && book.book.pages)
 			.map((book) => ({
 				id: book.book.id,
 				title: book.book.dto_combined.title,
@@ -315,7 +315,7 @@ const booksRoute = new Hono({ strict: false })
 				genres: book.book.dto_combined.genres,
 				pages: book.book.pages,
 				readers: book.book.users_count,
-				release_date: book.book.dto_combined.release_date,
+				releaseDate: book.book.dto_combined.release_date,
 				authors: book.book.contributions.map((contribution) => ({
 					name: contribution.author.name,
 					image: contribution.author.image?.url,
@@ -398,7 +398,7 @@ const booksRoute = new Hono({ strict: false })
 			}
 
 			const books = trendingBooksData.list_books
-				.filter((book) => book.book.image)
+				.filter((book) => book.book.image && book.book.pages)
 				.map((book) => ({
 					id: book.book.id,
 					title: book.book.dto_combined.title,
@@ -409,7 +409,7 @@ const booksRoute = new Hono({ strict: false })
 					genres: book.book.dto_combined.genres,
 					pages: book.book.pages,
 					readers: book.book.users_count,
-					release_date: book.book.dto_combined.release_date,
+					releaseDate: book.book.dto_combined.release_date,
 					authors: book.book.contributions.map((contribution) => {
 						return {
 							name: contribution.author.name,

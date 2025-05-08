@@ -16,6 +16,7 @@ const envSchema = z.object({
 	AWS_BUCKET_NAME: z.string(),
 	WEBHOOK_SECRET: z.string(),
 	S3_ENDPOINT: z.string(),
+	GOOGLE_CLIENT_ID: z.string(),
 })
 
 export const ENV = envSchema.parse(process.env)

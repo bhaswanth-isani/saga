@@ -35,7 +35,7 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 	}),
 }))
 
-export const providersSchema = z.enum(['google', 'apple'])
+export const providersSchema = z.enum(['google'])
 export type Providers = z.infer<typeof providersSchema>
 
 export type Account = typeof accounts.$inferSelect

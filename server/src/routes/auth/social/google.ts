@@ -1,6 +1,7 @@
 import { betterFetch } from '@better-fetch/fetch'
 import type { OAuthProvider, ProviderOptions } from '.'
 import { decodeJwt } from 'jose'
+import { ENV } from '../../../core/env'
 
 export interface GoogleProfile {
 	aud: string
@@ -29,8 +30,7 @@ export interface GoogleOptions extends ProviderOptions<GoogleProfile> {
 }
 
 const options: GoogleOptions = {
-	clientId: '',
-	clientSecret: '',
+	clientId: ENV.GOOGLE_CLIENT_ID,
 }
 
 export const google = (): OAuthProvider<GoogleProfile> => {

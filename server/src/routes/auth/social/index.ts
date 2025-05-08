@@ -1,5 +1,4 @@
 import type { Providers } from '../../../database/models/auth/accounts'
-import { apple, type AppleProfile } from './apple'
 import { google, type GoogleProfile } from './google'
 
 export interface OAuth2Tokens {
@@ -32,11 +31,9 @@ export interface OAuthProvider<T extends Record<string, any> = Record<string, an
 
 export type ProviderOptions<Profile extends Record<string, any> = any> = {
 	clientId: string
-	clientSecret: string
 	clientKey?: string
 }
 
 export const socialProviders: {
 	google: OAuthProvider<GoogleProfile>
-	apple: OAuthProvider<AppleProfile>
-} = { google: google(), apple: apple() } as const
+} = { google: google() } as const

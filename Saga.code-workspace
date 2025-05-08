@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "saga"
+		},
+		{
+			"path": "server"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"currentcolor",
+			"direc",
+			"Epub",
+			"epubcfi",
+			"epubx",
+			"hugeicons",
+			"inappwebview",
+			"kanit",
+			"paralleldrive",
+			"presign"
+		]
+	}
+}
