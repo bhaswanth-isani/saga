@@ -17,7 +17,6 @@ const socialRoute = new Hono({ strict: false }).post(
 			provider: providersSchema,
 			idToken: z.object({
 				token: z.string(),
-				nonce: z.string().nullish(),
 				accessToken: z.string().nullish(),
 				refreshToken: z.string().nullish(),
 				expiresAt: z.number().nullish(),
@@ -40,8 +39,8 @@ const socialRoute = new Hono({ strict: false }).post(
 			})
 		}
 
-		const { token, nonce } = idToken
-		const valid = await provider.verifyIdToken(token, nonce ?? undefined)
+		const { token } = idToken
+		const valid = await provider.verifyIdToken(token)
 
 		if (!valid) {
 			console.error('Invalid id token', { providerId })
