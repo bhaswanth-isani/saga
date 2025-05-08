@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true
+      freezed:
+        options:
+          format: false
+          equal: true
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
+          case_from_dart_to_sql: camelCase
