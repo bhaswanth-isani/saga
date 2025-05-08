@@ -540,7 +540,7 @@ const booksRoute = new Hono({ strict: false })
 
 			await db
 				.update(books)
-				.set({ path: objectKey })
+				.set({ path: objectKey.replaceAll('editorstack-saga/', '') })
 				.where(and(eq(books.isbn13, isbn13), eq(books.userId, userID)))
 
 			return c.json(true)
