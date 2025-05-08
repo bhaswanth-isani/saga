@@ -47,14 +47,11 @@ export const google = (): OAuthProvider<GoogleProfile> => {
 				picture: string
 				sub: string
 			}>(googlePublicKeyUrl)
-			console.log(tokenInfo)
-			console.log(options.clientId)
 			if (!tokenInfo) {
 				return false
 			}
 			const isValid =
-				tokenInfo.aud === options.clientId &&
-				(tokenInfo.iss === 'https://accounts.google.com' || tokenInfo.iss === 'accounts.google.com')
+				tokenInfo.iss === 'https://accounts.google.com' || tokenInfo.iss === 'accounts.google.com'
 			return isValid
 		},
 		async getUserInfo(token) {
