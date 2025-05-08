@@ -531,10 +531,8 @@ const booksRoute = new Hono({ strict: false })
 		webhookMiddleware,
 		async (c) => {
 			const { objectKey } = c.req.valid('json')
-			console.log(objectKey)
-			const userID = objectKey.split('/').shift()
+			const userID = objectKey.split('/')[1]
 			const isbn13 = objectKey.split('/').pop()?.split('.').shift()
-			console.log(objectKey, userID, isbn13)
 
 			if (!userID || !isbn13) {
 				throw new HTTPException(Status.unprocessableEntity)
