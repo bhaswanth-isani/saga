@@ -47,6 +47,8 @@ export const google = (): OAuthProvider<GoogleProfile> => {
 				picture: string
 				sub: string
 			}>(googlePublicKeyUrl)
+			console.log(tokenInfo)
+			console.log(options.clientId)
 			if (!tokenInfo) {
 				return false
 			}
