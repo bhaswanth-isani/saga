@@ -10,7 +10,6 @@ import { books } from '../../database/models/books/books'
 import { AuthMiddleware } from '../auth/helpers/middleware'
 import { and, between, eq } from 'drizzle-orm'
 import { webhookMiddleware } from '../../core/webhooks'
-import { ENV } from '../../core/env'
 import { stats } from '../../database/models/books/stats'
 import cache from '../../database/cache'
 
@@ -156,7 +155,7 @@ const booksRoute = new Hono({ strict: false })
 			const { user } = c.var.userInfo
 			const { isbn13, progress } = c.req.valid('json')
 
-			const today = new Date()
+			const today = new Date(formatDate(new Date()))
 			const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
 
 			const book = await db.query.books.findFirst({
