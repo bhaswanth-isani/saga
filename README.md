@@ -14,6 +14,7 @@ For Books - It uses Hardcover API for get books and their details
 - Database: PostgreSQL
 - Storage: AWS S3 is used for storage of uploaded E-Book files and secured with permissions
 - Server: AWS EC2
+- Webhook: AWS Lambda for triggering a webhook what a file is uploaded to S3
 
 ### Application UI
 <div style="display: inline;">
